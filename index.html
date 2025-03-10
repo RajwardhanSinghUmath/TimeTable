@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Timetable</title>
+    <style>
+        :root {
+            --primary-color: #4a6da7;
+            --secondary-color: #f8f9fa;
+            --class-color: #8bc34a;
+            --lunch-color: #ffeb3b;
+            --other-color: #a0a0a0;
+            --hover-color: #e9ecef;
+            --border-color: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #3a5889;
+        }
+        
+        .timetable {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .timetable th, .timetable td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .timetable th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .timetable tr:first-child th {
+            font-weight: 600;
+        }
+        
+        .timetable td {
+            cursor: pointer;
+            height: 80px;
+            vertical-align: top;
+            transition: background-color 0.2s;
+        }
+        
+        .timetable td:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .day-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .class-cell {
+            background-color: var(--class-color);
+            color: #333;
+        }
+        
+        .lunch-cell {
+            background-color: var(--lunch-color);
+            color: #333;
+        }
+        
+        .other-cell {
+            background-color: var(--other-color);
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .color-preview {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .class-preview {
+            background-color: var(--class-color);
+        }
+        
+        .other-preview {
+            background-color: var(--other-color);
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .cell-content {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .cell-details {
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 60px;
+            overflow: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .timetable {
+                font-size: 12px;
+            }
+            
+            .timetable th, .timetable td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Timetable</h1>
+        
+        <div class="controls">
+            <button id="resetBtn">Reset Timetable</button>
+            <button id="exportBtn">Export Data</button>
+        </div>
+        
+        <table class="timetable" id="timetable">
+            <tr>
+                <th>CSE-AI&DS</th>
+                <th>9:00-9:55</th>
+                <th>10:00-10:55</th>
+                <th>11:05-12:00</th>
+                <th>12:05-13:00</th>
+                <th>13:00-13:55</th>
+                <th>14:00-14:55</th>
+                <th>15:05-16:00</th>
+                <th>16:05-17:00</th>
+                <th>17:05-18:00</th>
+            </tr>
+            <tr>
+                <td class="day-header">Monday</td>
+                <td data-day="Monday" data-time="9:00-9:55"></td>
+                <td data-day="Monday" data-time="10:00-10:55"></td>
+                <td data-day="Monday" data-time="11:05-12:00"></td>
+                <td data-day="Monday" data-time="12:05-13:00"></td>
+                <td data-day="Monday" data-time="13:00-13:55"></td>
+                <td data-day="Monday" data-time="14:00-14:55"></td>
+                <td data-day="Monday" data-time="15:05-16:00"></td>
+                <td data-day="Monday" data-time="16:05-17:00"></td>
+                <td data-day="Monday" data-time="17:05-18:00"></td>
+            </tr>
+            <tr>
+                <td class="day-header">Tuesday</td>
+                <td data-day="Tuesday" data-time="9:00-9:55"></td>
+                <td data-day="Tuesday" data-time="10:00-10:55"></td>
+                <td data-day="Tuesday" data-time="11:05-12:00"></td>
+                <td data-day="Tuesday" data-time="12:05-13:00"></td>
+                <td data-day="Tuesday" data-time="13:00-13:55"></td>
+                <td data-day="Tuesday" data-time="14:00-14:55"></td>
+                <td data-day="Tuesday" data-time="15:05-16:00"></td>
+                <td data-day="Tuesday" data-time="16:05-17:00"></td>
+                <td data-day="Tuesday" data-time="17:05-18:00"></td>
+            </tr>
+            <tr>
+                <td class="day-header">Wednesday</td>
+                <td data-day="Wednesday" data-time="9:00-9:55"></td>
+                <td data-day="Wednesday" data-time="10:00-10:55"></td>
+                <td data-day="Wednesday" data-time="11:05-12:00"></td>
+                <td data-day="Wednesday" data-time="12:05-13:00"></td>
+                <td data-day="Wednesday" data-time="13:00-13:55"></td>
+                <td data-day="Wednesday" data-time="14:00-14:55"></td>
+                <td data-day="Wednesday" data-time="15:05-16:00"></td>
+                <td data-day="Wednesday" data-time="16:05-17:00"></td>
+                <td data-day="Wednesday" data-time="17:05-18:00"></td>
+            </tr>
+            <tr>
+                <td class="day-header">Thursday</td>
+                <td data-day="Thursday" data-time="9:00-9:55"></td>
+                <td data-day="Thursday" data-time="10:00-10:55"></td>
+                <td data-day="Thursday" data-time="11:05-12:00"></td>
+                <td data-day="Thursday" data-time="12:05-13:00"></td>
+                <td data-day="Thursday" data-time="13:00-13:55"></td>
+                <td data-day="Thursday" data-time="14:00-14:55"></td>
+                <td data-day="Thursday" data-time="15:05-16:00"></td>
+                <td data-day="Thursday" data-time="16:05-17:00"></td>
+                <td data-day="Thursday" data-time="17:05-18:00"></td>
+            </tr>
+            <tr>
+                <td class="day-header">Friday</td>
+                <td data-day="Friday" data-time="9:00-9:55"></td>
+                <td data-day="Friday" data-time="10:00-10:55"></td>
+                <td data-day="Friday" data-time="11:05-12:00"></td>
+                <td data-day="Friday" data-time="12:05-13:00"></td>
+                <td data-day="Friday" data-time="13:00-13:55"></td>
+                <td data-day="Friday" data-time="14:00-14:55"></td>
+                <td data-day="Friday" data-time="15:05-16:00"></td>
+                <td data-day="Friday" data-time="16:05-17:00"></td>
+                <td data-day="Friday" data-time="17:05-18:00"></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Add Event</h2>
+            
+            <div class="form-group">
+                <label for="eventName">Event Name:</label>
+                <input type="text" id="eventName" placeholder="Enter event name">
+            </div>
+            
+            <div class="form-group">
+                <label for="eventType">Event Type:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="eventType" value="class" checked>
+                        <span class="color-preview class-preview"></span> Class
+                    </label>
+                    <label>
+                        <input type="radio" name="eventType" value="lunch">
+                        <span class="color-preview" style="background-color: var(--lunch-color);"></span> Lunch
+                    </label>
+                    <label>
+                        <input type="radio" name="eventType" value="other">
+                        <span class="color-preview other-preview"></span> Other
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="eventDetails">Details (optional):</label>
+                <input type="text" id="eventDetails" placeholder="Additional details">
+            </div>
+            
+            <div class="action-buttons">
+                <button id="saveBtn">Save</button>
+                <button id="deleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const timetable = document.getElementById('timetable');
+            const modal = document.getElementById('eventModal');
+            const closeBtn = document.querySelector('.close');
+            const saveBtn = document.getElementById('saveBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            
+            let currentCell = null;
+            
+            // Initialize with default data or load from localStorage
+            function initializeTimetable() {
+                const savedData = localStorage.getItem('timetableData');
+                
+                if (savedData) {
+                    // If we have saved data, load it
+                    const timetableData = JSON.parse(savedData);
+                    applyTimetableData(timetableData);
+                } else {
+                    // Otherwise, set up default values
+                    const defaultData = getDefaultTimetableData();
+                    applyTimetableData(defaultData);
+                    saveTimetableData(defaultData);
+                }
+            }
+            
+            function getDefaultTimetableData() {
+                return {
+                    "Monday": {
+                        "9:00-9:55": { name: "DSA", type: "class", details: "" },
+                        "10:00-10:55": { name: "Optimization Techniques", type: "class", details: "" },
+                        "11:05-12:00": { name: "Discrete Mathematics", type: "class", details: "" },
+                        "12:05-13:00": { name: "BEEE", type: "class", details: "" },
+                        "13:00-13:55": { name: "Lunch Break", type: "lunch", details: "" },
+                        "15:05-16:00": { name: "Calculus", type: "class", details: "" }
+                    },
+                    "Tuesday": {
+                        "10:00-10:55": { name: "DSA", type: "class", details: "" },
+                        "11:05-12:00": { name: "Optimization Techniques", type: "class", details: "" },
+                        "12:05-13:00": { name: "Discrete Mathematics", type: "class", details: "" },
+                        "13:00-13:55": { name: "Lunch Break", type: "lunch", details: "" },
+                        "17:05-18:00": { name: "Calculus", type: "class", details: "" }
+                    },
+                    "Wednesday": {
+                        "9:00-9:55": { name: "DS Lab", type: "class", details: "" },
+                        "11:05-12:00": { name: "Optimization Techniques", type: "class", details: "" },
+                        "12:05-13:00": { name: "Lunch Break", type: "lunch", details: "" },
+                        "15:05-16:00": { name: "DT", type: "other", details: "" },
+                        "16:05-17:00": { name: "DT", type: "other", details: "" },
+                        "17:05-18:00": { name: "DT", type: "other", details: "" }
+                    },
+                    "Thursday": {
+                        "10:00-10:55": { name: "DSA", type: "class", details: "" },
+                        "11:05-12:00": { name: "Calculus Tutorial", type: "class", details: "" },
+                        "12:05-13:00": { name: "Lunch Break", type: "lunch", details: "" },
+                        "13:00-13:55": { name: "BEEE", type: "class", details: "" }
+                    },
+                    "Friday": {
+                        "9:00-9:55": { name: "Calculus", type: "class", details: "" },
+                        "11:05-12:00": { name: "BEEE", type: "class", details: "" },
+                        "12:05-13:00": { name: "Lunch Break", type: "lunch", details: "" },
+                        "13:00-13:55": { name: "Discrete Mathematics", type: "class", details: "" },
+                        "14:00-14:55": { name: "WP Lab", type: "other", details: "" },
+                        "15:05-16:00": { name: "WP Lab", type: "other", details: "" },
+                        "16:05-17:00": { name: "WP Lab", type: "other", details: "" }
+                    }
+                };
+            }
+            
+            function applyTimetableData(data) {
+                // Clear existing cells
+                const cells = document.querySelectorAll('td[data-day]');
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.className = '';
+                });
+                
+                // Apply the data
+                for (const day in data) {
+                    for (const time in data[day]) {
+                        const event = data[day][time];
+                        const cell = document.querySelector(`td[data-day="${day}"][data-time="${time}"]`);
+                        
+                        if (cell) {
+                            updateCellContent(cell, event.name, event.type, event.details);
+                        }
+                    }
+                }
+            }
+            
+            function updateCellContent(cell, name, type, details) {
+                // Clear existing content
+                cell.innerHTML = '';
+                
+                // Set appropriate class based on type
+                if (type === 'class') {
+                    cell.className = 'class-cell';
+                } else if (type === 'lunch') {
+                    cell.className = 'lunch-cell';
+                } else if (type === 'other') {
+                    cell.className = 'other-cell';
+                }
+                
+                // Create and append content elements
+                const nameElement = document.createElement('div');
+                nameElement.className = 'cell-content';
+                nameElement.textContent = name;
+                cell.appendChild(nameElement);
+                
+                if (details) {
+                    const detailsElement = document.createElement('div');
+                    detailsElement.className = 'cell-details';
+                    detailsElement.textContent = details;
+                    cell.appendChild(detailsElement);
+                }
+                
+                // Set data attributes for later use
+                cell.setAttribute('data-name', name);
+                cell.setAttribute('data-type', type);
+                cell.setAttribute('data-details', details || '');
+            }
+            
+            function saveTimetableData(data) {
+                localStorage.setItem('timetableData', JSON.stringify(data));
+            }
+            
+            function getCurrentTimetableData() {
+                const data = {};
+                
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                const timeSlots = [
+                    '9:00-9:55', '10:00-10:55', '11:05-12:00', '12:05-13:00', 
+                    '13:00-13:55', '14:00-14:55', '15:05-16:00', '16:05-17:00', '17:05-18:00'
+                ];
+                
+                days.forEach(day => {
+                    data[day] = {};
+                    
+                    timeSlots.forEach(time => {
+                        const cell = document.querySelector(`td[data-day="${day}"][data-time="${time}"]`);
+                        const name = cell.getAttribute('data-name');
+                        
+                        if (name) {
+                            data[day][time] = {
+                                name: name,
+                                type: cell.getAttribute('data-type'),
+                                details: cell.getAttribute('data-details') || ''
+                            };
+                        }
+                    });
+                });
+                
+                return data;
+            }
+            
+            // Event handlers
+            timetable.addEventListener('click', function(e) {
+                const cell = e.target.closest('td[data-day]');
+                if (!cell) return;
+                
+                currentCell = cell;
+                
+                // Populate the modal with cell data
+                document.getElementById('eventName').value = cell.getAttribute('data-name') || '';
+                document.getElementById('eventDetails').value = cell.getAttribute('data-details') || '';
+                
+                const eventType = cell.getAttribute('data-type') || 'class';
+                document.querySelector(`input[name="eventType"][value="${eventType}"]`).checked = true;
+                
+                document.getElementById('modalTitle').textContent = 
+                    cell.getAttribute('data-name') ? 'Edit Event' : 'Add Event';
+                modal.style.display = 'block';
+            });
+            
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            saveBtn.addEventListener('click', function() {
+                if (!currentCell) return;
+                
+                const name = document.getElementById('eventName').value.trim();
+                if (!name) {
+                    alert('Please enter an event name');
+                    return;
+                }
+                
+                const type = document.querySelector('input[name="eventType"]:checked').value;
+                const details = document.getElementById('eventDetails').value.trim();
+                
+                updateCellContent(currentCell, name, type, details);
+                
+                // Save the updated data
+                const data = getCurrentTimetableData();
+                saveTimetableData(data);
+                
+                modal.style.display = 'none';
+            });
+            
+            deleteBtn.addEventListener('click', function() {
+                if (!currentCell) return;
+                
+                // Clear cell
+                currentCell.innerHTML = '';
+                currentCell.className = '';
+                currentCell.removeAttribute('data-name');
+                currentCell.removeAttribute('data-type');
+                currentCell.removeAttribute('data-details');
+                
+                // Save the updated data
+                const data = getCurrentTimetableData();
+                saveTimetableData(data);
+                
+                modal.style.display = 'none';
+            });
+            
+            resetBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset the timetable to default values? This cannot be undone.')) {
+                    const defaultData = getDefaultTimetableData();
+                    applyTimetableData(defaultData);
+                    saveTimetableData(defaultData);
+                }
+            });
+            
+            exportBtn.addEventListener('click', function() {
+                const data = getCurrentTimetableData();
+                const dataStr = JSON.stringify(data, null, 2);
+                
+                // Create a download link
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'timetable_export.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // Initialize the timetable
+            initializeTimetable();
+        });
+    </script>
+</body>
+</html>
